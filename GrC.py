@@ -11,12 +11,14 @@ import torch
 import operator
 import math
 from numpy import *
+import time
 
 
 class GranularComputing(torch.nn.Module):
-    def __init__(self, entity_num, max_iterion, labels):
+    def __init__(self, data, max_iterion, labels):
         super(GranularComputing, self).__init__()
-        self.entity_num = entity_num
+        self.data = data
+        self.entity_num = len(data)
         self.max_iterion = max_iterion
         # 模糊参数
         self.m = 2.00
@@ -26,11 +28,11 @@ class GranularComputing(torch.nn.Module):
 
     # 初始化模糊矩阵（隶属度矩阵 U）
     # 用值在0，1间的随机数初始化隶属矩阵，得到c列的U，使其满足隶属度之和为1
-    def initialize_matrix_U(self, entity_num, cluster):
+    def initialize_matrix_U(self, cluster):
         # 返回一个模糊矩阵的列表
         matrix_ret = []
         # 标准化
-        for i in range(entity_num):
+        for i in range(self.entity_num):
             # 初始化，给与随机的隶属度
             random_list = [random.random() for i in range(cluster)]
             # print(random_list)
@@ -45,33 +47,33 @@ class GranularComputing(torch.nn.Module):
 
     # 迭代，最多迭代MAX_ITER次
     # 计算中心矩阵V——》更新隶属度矩阵U——》计算更新后的中心矩阵V_update，V_update和V的距离若小于阈值则停止
-    def iteration(self, matrix, cluster, data,):
+    def iteration(self, matrix, cluster):
         # 最大迭代次数：MAX_ITER=100
         iter = 0
         while iter <= self.max_iterion:
             iter += 1
             # 计算聚类中心矩阵 matrix_center
-            matrix_center = self.calculateCenter(matrix=matrix, cluster=cluster, data=data)
+            matrix_center = self.calculateCenter(matrix=matrix, cluster=cluster)
             # 更新模糊矩阵 matrix_new
-            matrix = self.matrix_update(init_matrix=matrix, matrix_center=matrix_center, data=data, cluster=cluster)
+            matrix = self.matrix_update(init_matrix=matrix, matrix_center=matrix_center,  cluster=cluster)
             # 得到更新后的中心矩阵
-            matrix_center_new = self.calculateCenter(matrix=matrix, cluster=cluster, data=data)
+            matrix_center_new = self.calculateCenter(matrix=matrix, cluster=cluster)
             # 如果matrix_center_new和matrix_center的距离小于阈值，迭代停止
             distance = 0
             for i in range(cluster):
-                for j in range(len(self.labels) - 1):
+                for j in range(len(self.labels)):
                     distance = (matrix_center_new[i][j] - matrix_center[i][j]) ** 2 + distance
             if sqrt(distance) < self.Epsilon:
                 break
         return matrix_center, matrix
 
     # 更新隶属度矩阵 U
-    def matrix_update(self, init_matrix, matrix_center, cluster, data):
+    def matrix_update(self, init_matrix, matrix_center, cluster):
         # 2/(m-1)
         p = float(2 / (self.m - 1))
         for i in range(self.entity_num):
             # 取出文件中的每一行数据
-            x = list(data.iloc[i])
+            x = list(self.data.iloc[i])
             # 求dij
             distances = [np.linalg.norm(list(map(operator.sub, x, matrix_center[j]))) for j in range(cluster)]
             for j in range(cluster):
@@ -81,7 +83,7 @@ class GranularComputing(torch.nn.Module):
         return init_matrix
 
     # 计算中心矩阵 V
-    def calculateCenter(self, matrix, cluster, data):
+    def calculateCenter(self, matrix, cluster):
         # 转置
         matrix_tranpose = list(zip(*matrix))
         # 中心矩阵，列表
@@ -96,7 +98,7 @@ class GranularComputing(torch.nn.Module):
             # 取出转置矩阵每列的实体数量个元素
             for i in range(self.entity_num):
                 # 得到分子中的 xj
-                data_point = list(data.iloc[i])
+                data_point = list(self.data.iloc[i])
                 # uij的m次方 乘以 xj
                 prod = [xraised[i] * val for val in data_point]
                 temp_num.append(prod)
@@ -104,13 +106,51 @@ class GranularComputing(torch.nn.Module):
             numerator = map(sum, zip(*temp_num))
             # 求聚类中心
             center = [z / denominator for z in numerator]
-            print(center)
+            # print(center)
             matrix_center.append(center)
         return matrix_center
 
-    def forward(self, data, cluster):
+    # 获得聚类结果（判断样本属于哪个类）
+    def get_cluster_id(self, matrix):
+        results = list()
+        # for循环取出U矩阵的实体数量行数据
+        for i in range(self.entity_num):
+            # 此时每条数据有cluster个隶属度，取最大的那个，并返回index值，即该实体点归属对应的cluster类簇
+            max_value, index = max((value, index) for (index, value) in enumerate(matrix[i]))
+            # 以index对应的clusre_id作为结果
+            results.append(index)
+        return results
+
+    # Xie-Beni聚类有效性
+    def valid_xie_beni(self, membership_mat, center, cluster):
+        membership_mat = np.array(membership_mat)
+        center = np.array(center)
+        data_array = np.array(self.data)
+        sum_cluster_distance = 0
+        min_cluster_center_distance = inf
+        for i in range(cluster):
+            for j in range(self.entity_num):
+                sum_cluster_distance = sum_cluster_distance + membership_mat[j][i] ** 2 * sum(
+                    power(data_array[j, :] - center[i, :], 2))  # 计算类一致性
+        for i in range(cluster - 1):
+            for j in range(i + 1, cluster):
+                cluster_center_distance = sum(power(center[i, :] - center[j, :], 2))  # 计算类间距离
+                if cluster_center_distance < min_cluster_center_distance:
+                    min_cluster_center_distance = cluster_center_distance
+        return sum_cluster_distance / (self.entity_num * min_cluster_center_distance)
+
+    def forward(self, cluster):
+        # 记录初始化时间
+        start = time.time()
         # 初始化模糊矩阵 U
-        initial_matrix = self.initialize_matrix_U(entity_num=self.entity_num, cluster=cluster)
+        initial_matrix = self.initialize_matrix_U(cluster=cluster)
         # 迭代
-        V, U = self.iteration(initial_matrix, cluster, data)
-        return V
+        matrix_center, matrix = self.iteration(matrix=initial_matrix, cluster=cluster)
+        # 获得聚类结果
+        results = self.get_cluster_id(matrix=matrix)
+        print(results)
+        # 打印聚类所用时长
+        print("用时：{0} s".format(time.time() - start))
+        valid_effect = self.valid_xie_beni(matrix, matrix_center, cluster)
+        print("聚类有效性：", valid_effect)
+        return results, matrix_center, matrix
