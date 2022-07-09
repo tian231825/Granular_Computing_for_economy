@@ -14,10 +14,12 @@ import time
 data_full = pd.read_csv("Iris.csv")
 # 得到表格的列名
 columns = list(data_full.columns)
+print(columns)
 # 前四个列名是鸢尾花特征（最后一列是鸢尾花种类）
 features = columns[0:len(columns) - 1]
 # 提取需要聚类的数据（根据列名提取前四列）
 data = data_full[features]
+print(data)
 # 分类数
 c = 3
 # 最大迭代数
@@ -26,6 +28,7 @@ MAX_ITER = 100
 Epsilon = 0.00000001
 # 样本数，行数
 n = len(data)
+print("n:========="+str(n))
 # 模糊参数
 m = 2.00
 
