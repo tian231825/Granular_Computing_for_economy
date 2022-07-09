@@ -17,7 +17,7 @@ def data_preprocessing(path, id_list):
     # features = columns[0:len(columns) - 1]
     features = []
     for i in range(len(columns)):
-        if i in feature_fetch_id:
+        if i in id_list:
             features.append(columns[i])
     data = data_full[features]
     # print(data)
