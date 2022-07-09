@@ -6,13 +6,13 @@
 @Software: PyCharm
 """
 import random
-import numpy as np
+import time
+import matplotlib.pyplot as plt
 import torch
+from numpy import *
+import numpy as np
 import operator
 import math
-from numpy import *
-import time
-
 
 class GranularComputing(torch.nn.Module):
     def __init__(self, data, max_iterion, labels):
@@ -27,8 +27,8 @@ class GranularComputing(torch.nn.Module):
         self.labels = labels
 
     # 初始化模糊矩阵（隶属度矩阵 U）
-    # 用值在0，1间的随机数初始化隶属矩阵，得到c列的U，使其满足隶属度之和为1
-    def initialize_matrix_U(self, cluster):
+    # 用值在0，1间的随机数初始化隶属矩阵，得到c列的matrix，使其满足隶属度之和为1
+    def initialize_matrix(self, cluster):
         # 返回一个模糊矩阵的列表
         matrix_ret = []
         # 标准化
@@ -55,7 +55,7 @@ class GranularComputing(torch.nn.Module):
             # 计算聚类中心矩阵 matrix_center
             matrix_center = self.calculateCenter(matrix=matrix, cluster=cluster)
             # 更新模糊矩阵 matrix_new
-            matrix = self.matrix_update(init_matrix=matrix, matrix_center=matrix_center,  cluster=cluster)
+            matrix = self.matrix_update(init_matrix=matrix, matrix_center=matrix_center, cluster=cluster)
             # 得到更新后的中心矩阵
             matrix_center_new = self.calculateCenter(matrix=matrix, cluster=cluster)
             # 如果matrix_center_new和matrix_center的距离小于阈值，迭代停止
@@ -139,11 +139,40 @@ class GranularComputing(torch.nn.Module):
                     min_cluster_center_distance = cluster_center_distance
         return sum_cluster_distance / (self.entity_num * min_cluster_center_distance)
 
+    def result_plt_show(self, results, center):
+        # matplotlib需要array类型的数据
+        data_array = np.array(self.data)
+        center = np.array(center)
+        results = np.array(results)
+        # example
+        # 将DATA的第一列和第二列作为x、y轴绘图
+        plt.xlim(4, 8)
+        plt.ylim(1, 5)
+        # 创建一个绘图窗口
+        plt.figure(1)
+        # 画散点图
+        # 样本点   其中nonzero(results==0)为取出0这一类的下标
+        plt.scatter(data_array[nonzero(results == 0), 0], data_array[nonzero(results == 0), 1], marker='o', color='r', label='0',
+                    s=30)
+        plt.scatter(data_array[nonzero(results == 1), 0], data_array[nonzero(results == 1), 1], marker='+', color='b', label='1',
+                    s=30)
+        plt.scatter(data_array[nonzero(results == 2), 0], data_array[nonzero(results == 2), 1], marker='*', color='g', label='2',
+                    s=30)
+        plt.scatter(data_array[nonzero(results == 3), 0], data_array[nonzero(results == 3), 1], marker='*', color='y',
+                    label='3',
+                    s=30)
+        plt.scatter(data_array[nonzero(results == 4), 0], data_array[nonzero(results == 4), 1], marker='+', color='y',
+                    label='3',
+                    s=30)
+        # 中心点
+        plt.scatter(center[:, 0], center[:, 1], marker='x', color='m', s=50)
+        plt.show()
+
     def forward(self, cluster):
         # 记录初始化时间
         start = time.time()
         # 初始化模糊矩阵 U
-        initial_matrix = self.initialize_matrix_U(cluster=cluster)
+        initial_matrix = self.initialize_matrix(cluster=cluster)
         # 迭代
         matrix_center, matrix = self.iteration(matrix=initial_matrix, cluster=cluster)
         # 获得聚类结果
@@ -153,4 +182,7 @@ class GranularComputing(torch.nn.Module):
         print("用时：{0} s".format(time.time() - start))
         valid_effect = self.valid_xie_beni(matrix, matrix_center, cluster)
         print("聚类有效性：", valid_effect)
+
+        # 可视化结果
+        self.result_plt_show(results, matrix_center)
         return results, matrix_center, matrix

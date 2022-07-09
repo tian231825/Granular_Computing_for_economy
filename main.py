@@ -6,6 +6,7 @@
 @Software: PyCharm
 """
 import pandas as pd
+
 from GrC import *
 
 
@@ -25,8 +26,7 @@ def data_preprocessing(path, id_list):
 
 
 data_file_path = "Iris.csv"
-feature_fetch_id = [0, 1,  3]
+feature_fetch_id = [0, 1, 3]
 coloumn_name, data = data_preprocessing(path=data_file_path, id_list=feature_fetch_id)
 fcm = GranularComputing(data=data, max_iterion=100, labels=coloumn_name)
 results, matrix_center, matrix = fcm(5)
-
