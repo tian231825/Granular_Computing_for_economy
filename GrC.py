@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
 @File    : GrC.py
-@Time    : 2022/7/9 11:17
+@Time    : 2022/7/16 11:17
 @Author  : junruitian
 @Software: PyCharm
 """
@@ -13,6 +13,7 @@ from numpy import *
 import numpy as np
 import operator
 import math
+
 
 class GranularComputing(torch.nn.Module):
     def __init__(self, data, max_iterion, labels):
