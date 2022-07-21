@@ -33,7 +33,7 @@ main.py 调用两个模块进行应用
 > *主要参数* \
 >  *data_file_path*  # *数据列表，通常为csv结构*，type: str \
 >  *feature_fetch_id* # *Attention机制下重点关注的数据标签id列表*，type: str \
->  *cluster* # *聚类族簇数目，默认为选取聚类单元（企业）的根号数量 $\sqrt{num(enterprise)}$， type: int
+>  *cluster* # *聚类族簇数目，默认为选取聚类单元（企业）的根号数量* $\sqrt{num(enterprise)}$， type: int
 
 # **B. Data Input**
 
@@ -48,6 +48,7 @@ main.py 调用两个模块进行应用
 |4.7|3.2|1.3|0.2| enterprise_3 |
 |4.6|3.1|1.5|0.2| enterprise_4 |
 |5.4|3.9|1.7|0.4| enterprise_5 |
+|3.4|3.9|1.2|0.3| enterprise_6 |
 | ... | ... | ... | ... | ... |
 |4.9|3.1|1.5|0.1| enterprise_m |
 |5.4|3.7|1.5|0.2| enterprise_n |
@@ -76,12 +77,18 @@ Annual Tax,Annual Assets,Worker Num,Research Investment,Enterprise Name,
 ```
 
 在main.py中构建类对象
+
 ```
 from Data_preprocessing import *
 
 data_file_path = "Iris.csv"
 origin_data = Data(path=data_file_path)
 ```
+
+</br>
+</br>
+</br>
+</br>
 
 # **C. Data PreProcessing**
 
@@ -100,6 +107,8 @@ origin_data = Data(path=data_file_path)
 | 3 | 能源煤炭业 |
 | 4 | 交通运输业 |
 |... | ... |
+| 98 | 农业种植业 |
+| 99 | 新兴信息产业 |
 | 100 | 新兴信息产业 |
 
 </div>
@@ -118,13 +127,15 @@ origin_data = Data(path=data_file_path)
 | 3 | 能源煤炭业 | 2 |
 | 4 | 交通运输业 | 0 |
 |... | ... | ... |
+| 98 | 农业种植业 | 1 |
+| 99 | 新兴信息产业 | 8 |
 | 100 | 新兴信息产业 | 8 |
 
 </div>
 
 <center>表3</center>
 
-### ***<font color=red> 注：在数据清洗预处理之后，调用类接口会使新生成的整个数据表的数量结构会发生变化！例如在将文本转化为对应标签后，label的数量会随之增加</font>***
+#### ***<font color=red> 注：在数据清洗预处理之后，调用类接口会使新生成的整个数据表的数量结构会发生变化！例如在将文本转化为对应标签后，label的数量会随之增加</font>***
 
 ## **C 1.2**
 
@@ -200,7 +211,7 @@ Transfer to
 
 <center>表7</center>
 
-## Data类中不同的接口方法对应不同种类的问题进行预处理清洗，选择不同的接口或在Data类中自制更多的接口针对特定的数据标签和不同的数据清洗问题，上文提供两个示例接口 
+#### Data类中不同的接口方法对应不同种类的问题进行预处理清洗，选择不同的接口或在Data类中自制更多的接口针对特定的数据标签和不同的数据清洗问题，上文提供两个示例接口 
 
 ```
 origin_data.text_transfer_label(4)
