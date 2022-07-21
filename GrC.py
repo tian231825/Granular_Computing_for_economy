@@ -35,12 +35,18 @@ class GranularComputing(torch.nn.Module):
         # 标准化
         for i in range(self.entity_num):
             # 初始化，给与随机的隶属度
-            random_list = [random.random() for i in range(cluster)]
+            random_list = []
+            for i in range(0, cluster):
+                ran = random.random()
+                random_list.append(ran)
             # print(random_list)
             # 标准化：值/每列的和
             summation = sum(random_list)
             # print(summation)
-            temp_list = [x / summation for x in random_list]
+            temp_list = []
+            for j in random_list:
+                x = j / summation
+                temp_list.append(x)
             # print(temp_list)
             matrix_ret.append(temp_list)
         # print(type(matrix_ret))
@@ -54,11 +60,11 @@ class GranularComputing(torch.nn.Module):
         while iter <= self.max_iterion:
             iter += 1
             # 计算聚类中心矩阵 matrix_center
-            matrix_center = self.calculateCenter(matrix=matrix, cluster=cluster)
+            matrix_center = self.CalculateCenter(matrix=matrix, cluster=cluster)
             # 更新模糊矩阵 matrix_new
             matrix = self.matrix_update(init_matrix=matrix, matrix_center=matrix_center, cluster=cluster)
             # 得到更新后的中心矩阵
-            matrix_center_new = self.calculateCenter(matrix=matrix, cluster=cluster)
+            matrix_center_new = self.CalculateCenter(matrix=matrix, cluster=cluster)
             # 如果matrix_center_new和matrix_center的距离小于阈值，迭代停止
             distance = 0
             for i in range(cluster):
@@ -76,15 +82,22 @@ class GranularComputing(torch.nn.Module):
             # 取出文件中的每一行数据
             x = list(self.data.iloc[i])
             # 求dij
-            distances = [np.linalg.norm(list(map(operator.sub, x, matrix_center[j]))) for j in range(cluster)]
+            distances = []
+            for j in range(0, cluster):
+                dis = np.linalg.norm(list(map(operator.sub, x, matrix_center[j])))
+                distances.append(dis)
             for j in range(cluster):
                 # 分母
-                den = sum([math.pow(float(distances[j] / distances[cluster]), p) for cluster in range(cluster)])
+                den_list = []
+                for cluster in range(cluster):
+                    t = math.pow(float(distances[j] / distances[cluster]), p)
+                    den_list.append(t)
+                den = sum(den_list)
                 init_matrix[i][j] = float(1 / den)
         return init_matrix
 
     # 计算中心矩阵 V
-    def calculateCenter(self, matrix, cluster):
+    def CalculateCenter(self, matrix, cluster):
         # 转置
         matrix_tranpose = list(zip(*matrix))
         # 中心矩阵，列表
@@ -92,7 +105,10 @@ class GranularComputing(torch.nn.Module):
         for j in range(cluster):
             x = matrix_tranpose[j]
             # uij的m次方，m为模糊参数
-            xraised = [e ** self.m for e in x]
+            xraised = []
+            for e in x:
+                x_r = e ** self.m
+                xraised.append(x_r)
             # 分母
             denominator = sum(xraised)
             temp_num = []
@@ -101,12 +117,18 @@ class GranularComputing(torch.nn.Module):
                 # 得到分子中的 xj
                 data_point = list(self.data.iloc[i])
                 # uij的m次方 乘以 xj
-                prod = [xraised[i] * val for val in data_point]
+                prod = []
+                for val in data_point:
+                    prod_in = xraised[i] * val
+                    prod.append(prod_in)
                 temp_num.append(prod)
             # 分子：上面的结果求和
             numerator = map(sum, zip(*temp_num))
             # 求聚类中心
-            center = [z / denominator for z in numerator]
+            center = []
+            for z in numerator:
+                center_i = z / denominator
+            center.append(center_i)
             # print(center)
             matrix_center.append(center)
         return matrix_center

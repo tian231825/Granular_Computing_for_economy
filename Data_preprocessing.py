@@ -20,6 +20,17 @@ class Data(torch.nn.Module):
         # 得到表格的列名
         self.columns = list(self.data_full.columns)
 
+    def data_preprocessing(self, id_list):
+        # 被使用数据对应的列
+        self.features = []
+        for i in range(len(self.columns)):
+            if i in id_list:
+                self.features.append(self.columns[i])
+        return self.features
 
-    def data_preprocessing(self):
-        pass
+    def return_coloumn(self):
+        return self.features
+
+    def return_use_data(self):
+        use_data = self.data_full[self.features]
+        return use_data
